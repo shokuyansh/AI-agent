@@ -41,7 +41,7 @@ useEffect(()=>{
 
        if (data.length === 0) {
             const queryKeywords = ['show', 'list', 'get', 'view', 'display', 'find'];
-            const isQuery = queryKeywords.some(keyword => currentMessage.toLowerCase().startsWith(keyword));
+            const isQuery = queryKeywords.some(keyword => userMessage.toLowerCase().startsWith(keyword));
 
             if (isQuery) {
                 newAssistantMessage = { sender: 'assistant', content: "I couldn't find anything for that.", type: 'text' };
