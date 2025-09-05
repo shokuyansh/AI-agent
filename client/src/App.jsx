@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import axios from 'axios'
-
 import {toast , ToastContainer} from 'react-toastify'
 import './App.css'
-
-import ResultsTable from './ResultsTable';
-import ExpenseChart from './ExpenseChart';
+import ChatMessage from './ChatMessage'
+import { useRef } from 'react'
+import { useEffect } from 'react'
 
 axios.defaults.withCredentials = true;
 function App() {
@@ -13,31 +12,41 @@ function App() {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [total,setTotal] = useState(null);
-  
+  const [history,setHistory] = useState([{ sender: 'assistant', content: 'Hello! How can I help you today?', type: 'text' }]);  
+const chatHistoryRef = useRef(null);
+useEffect(()=>{
+  if(chatHistoryRef.current){
+    chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+  }
+},[history]);
 
   const handleInput = async() => {
     if(!userMessage.trim()){
       toast.error("Please enter a message");
       return;
     }
+    const newUserMessage = { sender: 'user', content: userMessage, type: 'text' };
+    setHistory(prev => [...prev, newUserMessage]);
+    setUserMessage('');
     setIsLoading(true);
-    setResults([]);
-    setTotal(null);
+
+    setHistory(prev => [...prev, { sender: 'assistant', type: 'loading' }]);
     try{
         console.log(userMessage);
         const result = await axios.post(`http://localhost:3000/agent`,{userMessage});
         console.log(result.data);
-        const data=result.data;
-        if (data.length > 0 && data[0].hasOwnProperty('total_amount')) {
-          setTotal(data[0].total_amount);
-        const cleanedData = data.map(({ total_amount, ...rest }) => rest);
-        setResults(cleanedData);
+        const data = result.data;
+        let newAssistantMessage = {};
+
+      if (data.length === 0) {
+        newAssistantMessage = { sender: 'assistant', content: 'Done!', type: 'text' };
+      } else if (data[0].hasOwnProperty('item') && data[0].hasOwnProperty('amount')) {
+        newAssistantMessage = { sender: 'assistant', content: data, type: 'chart' };
       } else {
-        setResults(data);
+        newAssistantMessage = { sender: 'assistant', content: data, type: 'table' };
       }
-        if(result.status===200&&result.data.length===0){
-          toast.success("Success");
-        }
+      setIsLoading(true);
+      setHistory(prev => [...prev.slice(0, -1), newAssistantMessage]);
     }catch(err){
         console.error('Error sending message:', err);
         toast.error(err.response.data.error);
@@ -45,41 +54,29 @@ function App() {
       setIsLoading(false);
     }
   }
-  const renderResults = ()=>{
-      if(isLoading){
-        return <p>Thinking...</p>
-      }
-      if(results.length===0){
-        return null;
-      }
-      const firstResult = results[0];
-      if(firstResult.hasOwnProperty('item')&&firstResult.hasOwnProperty('amount')){
-        return <ExpenseChart data={results}/>;
-      }else{
-      return <ResultsTable data={results}/>;
-      }
-    };
+
   return (
-    <div className='container'>
-      <h1>AI assistant</h1>
-      <div className='input-group'>
+    <div className='app-container'>
+      <header>
+        <h1>AI Assistant</h1>
+      </header>
+      <main className='chat-history' ref={chatHistoryRef}>
+        {history.map((msg,index)=>(
+          <ChatMessage key={index} message={msg}/>
+        ))}
+      </main>
+      <footer className='input-area'>
       <input 
-      type="text" 
+      type="text"
+      value={userMessage} 
       onChange={(e)=>setUserMessage(e.target.value)}
       onKeyDown={(e)=> e.key==='Enter'&&handleInput()}
       placeholder='e.g show my groceries list'/>
       <button onClick={handleInput} disabled={isLoading}>
         Send
       </button>
-      </div>
-      {total && (
-        <div className="total-display">
-          <h2>Total Spent: ₹{total}</h2>
-        </div>
-      )}
-      <div className='results-container'>
-        {renderResults()}
-      </div>
+      </footer>
+
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark"/>
     </div> 
   )

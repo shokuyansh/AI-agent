@@ -6,9 +6,25 @@ const ResultsTable = ({data})=>{
     }
 
     const headers = Object.keys(data[0]);
-
+    const formatCellContent = (key, value) => {
+    
+        if ((key === 'purchased_on' || key === 'due_date' || key === 'spent_on') && typeof value === 'string') {
+            try {
+               
+                return new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                }).format(new Date(value));
+            } catch (error) {
+                return value; 
+            }
+        }
+        return String(value); 
+    };
     return(
-        <table>
+        <div className="table-container">
+        <table className="results-table">
             <thead>
                 <tr>
                     {headers.map((header)=>(
@@ -20,12 +36,13 @@ const ResultsTable = ({data})=>{
                 {data.map((row,index)=>(
                     <tr key={index}>
                         {headers.map((header)=>(
-                            <td key={header}>{String(row[header])}</td>
+                            <td key={header}>{formatCellContent(header, row[header])}</td>
                         ))}
                     </tr>
                 ))}
             </tbody>
         </table>
+        </div>
     );
 }
 export default ResultsTable;

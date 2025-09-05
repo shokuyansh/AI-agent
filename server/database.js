@@ -30,13 +30,5 @@ export async function createUserDB(userId){
     });
     await userClient.connect();
 
-    // await userClient.query(`
-    // CREATE TABLE IF NOT EXISTS groceries (
-    //   id SERIAL PRIMARY KEY,
-    //   name TEXT NOT NULL UNIQUE,
-    //   quantity INT DEFAULT 1,
-    //   purchased_on DATE DEFAULT CURRENT_DATE
-    // );`);
-
     return userClient;
 }
