@@ -34,6 +34,21 @@ app.post('/agent',async(req,res)=>{
         const {userMessage}=req.body;
         console.log('Received request:', req.body);
         console.log('userId:', userId);
+
+        const lowerCaseMessage = userMessage.toLowerCase();
+        const chitchatKeywords = ['hello', 'hi', 'hey', 'what can you do', 'help', 'what is this'];
+
+        if (chitchatKeywords.some(keyword => lowerCaseMessage.includes(keyword))) {
+            const introMessage = "Hello! I'm your personal assistant. You can ask me to manage your life by giving me commands like:\n\n" +
+                                 "• 'Add bread to my groceries'\n" +
+                                 "• 'Show my tasks'\n" +
+                                 "• 'Log 500 for lunch expense'\n" +
+                                 "• 'Create a book list and add The Great Gatsby'";
+            
+            
+            return res.json([{ assistant_response: introMessage }]);
+        }
+
         const userClient = await getDBClient(); 
         const schemaDescription = [`
             Table: groceries
