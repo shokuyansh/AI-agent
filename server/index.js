@@ -1,14 +1,15 @@
 import express from 'express';
-import { createUserDB } from './database.js';
+import { getDBClient } from './database.js';
 import {naturalToSql} from './sqlAgent.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from "uuid";
+import dotenv from 'dotenv';
 const app=express();
 const port=3000;
 
 const corsOptions = {
-  origin: 'http://localhost:5173', 
+  origin: process.env.FRONTEND_URL,
   credentials: true,
 }
 
@@ -33,32 +34,43 @@ app.post('/agent',async(req,res)=>{
         const {userMessage}=req.body;
         console.log('Received request:', req.body);
         console.log('userId:', userId);
-        const userClient = await createUserDB(userId);
+        const userClient = await getDBClient(); 
         const schemaDescription = [`
-    Table: groceries
-    Columns:
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      quantity INT DEFAULT 1,
-      purchased_on DATE DEFAULT CURRENT_DATE
-    `,`
-    Table: tasks
-    Columns:
-      id SERIAL PRIMARY KEY,
-      name TEXT TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
-      due_date DATE DEFAULT CURRENT_DATE
-    `,
-    `
-    Table:expenses
+            Table: groceries
+            Columns:
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                quantity INT DEFAULT 1,
+                purchased_on DATE DEFAULT CURRENT_DATE,
+                UNIQUE(user_id, name)
+        `, `
+            Table: tasks
+            Columns:
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                due_date DATE DEFAULT CURRENT_DATE
+        `, `
+            Table:expenses
+            Columns:
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                item TEXT NOT NULL,
+                amount NUMERIC NOT NULL,
+                spent_on DATE DEFAULT CURRENT_DATE
+        `, `
+    Table: custom_lists
     Columns:
         id SERIAL PRIMARY KEY,
-        item TEXT NOT NULL,
-        amount NUMERIC NOT NULL,
-        spent_on DATE DEFAULT CURRENT_DATE
-    `];
+        user_id TEXT NOT NULL,
+        list_name TEXT NOT NULL,
+        item_description TEXT NOT NULL,
+        created_on DATE DEFAULT CURRENT_DATE
+`];
 
-        const sqlQuery = await naturalToSql(userMessage,schemaDescription);
+        const sqlQuery = await naturalToSql(userMessage,userId,schemaDescription);
         console.log('Generated SQL Query:', sqlQuery);
         const result = await userClient.query(sqlQuery);
         console.log('Query Result:', result.rows);

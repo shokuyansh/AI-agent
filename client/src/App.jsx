@@ -7,13 +7,14 @@ import { useRef } from 'react'
 import { useEffect } from 'react'
 
 axios.defaults.withCredentials = true;
+const backendURL = import.meta.env.VITE_BACKEND_URL;
 function App() {
+
   const [userMessage, setUserMessage] = useState('');
-  const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [total,setTotal] = useState(null);
   const [history,setHistory] = useState([{ sender: 'assistant', content: 'Hello! How can I help you today?', type: 'text' }]);  
-const chatHistoryRef = useRef(null);
+  const chatHistoryRef = useRef(null);
+
 useEffect(()=>{
   if(chatHistoryRef.current){
     chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
@@ -33,7 +34,7 @@ useEffect(()=>{
     setHistory(prev => [...prev, { sender: 'assistant', type: 'loading' }]);
     try{
         console.log(userMessage);
-        const result = await axios.post(`http://localhost:3000/agent`,{userMessage});
+        const result = await axios.post(`${backendURL}/agent`,{userMessage});
         console.log(result.data);
         const data = result.data;
         let newAssistantMessage = {};

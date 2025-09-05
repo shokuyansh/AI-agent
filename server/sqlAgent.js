@@ -1,53 +1,48 @@
 import model from "./agent.js";
 
-export async function naturalToSql(userMessage,schema){
+export async function naturalToSql(userMessage, userId, schema) {
     const prompt = `
-You are a SQL generator.
-Schema:
+
+You are an expert PostgreSQL assistant. Your sole purpose is to convert natural language into precise, secure, and valid PostgreSQL queries for a multi-tenant application. You are a machine that only outputs SQL code.
+
+### CONTEXT
+- The user you are serving has the ID: '${userId}'. This ID MUST be used in every query.
+- You have access to the following table schemas:
 ${schema}
--First check if the table you are querying exists or not if it doesn't create it.
--below is example of table creation query
-CREATE TABLE IF NOT EXISTS groceries (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      quantity INT DEFAULT 1,
-      purchased_on DATE DEFAULT CURRENT_DATE
-    );
+- The current date is ${new Date().toISOString().split('T')[0]}.
 
--Tables have to be created in the database before you can use them.If the table already exists don't create it again.
--Schema are for multiple tables.
--If the user doesn't specify a table, choose the most relevant one based on the request.
--i have specified 3 tables groceries,tasks,expenses for most common requests for other requests create on your own.
+### RULES
+1.  **CRITICAL SECURITY RULE:** Every query that reads, modifies, or deletes data (SELECT, UPDATE, DELETE) MUST include a 'WHERE user_id = \'${userId}\'' clause. Every query that adds data (INSERT) MUST include the 'user_id' column with the value '${userId}'. There are no exceptions.
 
--Columns are the fields in the table.
--Use the columns that are relevant to the user's request.
--If the user doesn't specify a column, choose the most relevant one based on the request.
--Generate a valid SQL query based on the user's request.
--If the request is ambiguous, generate the most reasonable SQL query.
--when asked for showing expenses also return the total amount spent along with the expense table.
-Rules:
-- Always output a valid SQL query for PostgreSQL.
-- Do not output explanations, comments, or markdown.
-- For "add" or "insert" requests,first check if table you are querying exists or not if it doesn't create it, generate an INSERT with an 
-ON CONFLICT (name) DO UPDATE SET quantity = table_name.quantity + EXCLUDED.quantity clause. Always include RETURNING *;.
-- For "update" requests → generate UPDATE with RETURNING *.
-- For "delete" requests → generate DELETE with RETURNING *.
-- For "list", "show", "get" requests → generate SELECT.
-- NEVER just output "SELECT *" unless the user explicitly asks for all rows.
--Check if the item asked to add exists before inserting it , if it exists then update it's quantity don't add it.
+2.  **TABLE SELECTION LOGIC:**
+    - First, analyze the user's request to see if it clearly matches one of the specialized tables: 'groceries', 'tasks', or 'expenses'.
+    - **FALLBACK RULE:** If the request does NOT clearly fit a specialized table (e.g., "track books", "log workout", "save gift ideas"), you MUST use the generic 'custom_lists' table.
+    - For 'custom_lists', the user's invented category (e.g., "books", "workout log", "gift ideas") becomes the 'list_name', and the item itself becomes the 'item_description'.
 
+3.  **INSERT vs. UPDATE (UPSERT):** For "add" requests to 'groceries', use an 'INSERT ... ON CONFLICT (user_id, name) DO UPDATE SET quantity = groceries.quantity + EXCLUDED.quantity' statement. For all other tables, including 'custom_lists', just perform a simple INSERT.
 
-User: "${userMessage}"
-SQL:
+4.  **EXPENSE TOTALS:** If the user asks to "show expenses", you MUST generate a query that returns all expense rows for that user AND includes a 'total_amount' column on every row, calculated by a window function like 'SUM(amount) OVER ()'.
+
+5.  **COLUMN SELECTION:** Do not use 'SELECT *'. For a general "show my list" or "show my books" request, return all relevant columns except 'user_id'.
+
+### FORMATTING INSTRUCTIONS
+- Output ONLY the raw SQL query.
+- Do NOT include any explanations, comments, or markdown characters (\`\`\`).
+- Ensure the query is terminated with a semicolon (;).
+
+### USER REQUEST
+"${userMessage}"
+
+### SQL QUERY:
 `;
-const response = await model.invoke([{
-    role: "user",
-    content: prompt
-}])
-let sql = response.content.trim();
 
-  
-  sql = sql.replace(/```sql|```/g, "").trim();
+    const response = await model.invoke([{
+        role: "user",
+        content: prompt
+    }]);
 
-  return sql;
+    let sql = response.content.trim();
+    sql = sql.replace(/```sql|```/g, "").trim();
+
+    return sql;
 }
