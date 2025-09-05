@@ -21,38 +21,45 @@ useEffect(()=>{
   }
 },[history]);
 
-  const handleInput = async() => {
-    if(!userMessage.trim()){
-      toast.error("Please enter a message");
-      return;
+  
+const handleInput = async () => {
+    if (!userMessage.trim()) {
+        toast.error("Please enter a message");
+        return;
     }
-    const newUserMessage = { sender: 'user', content: userMessage, type: 'text' };
+    
+    const messageToSend = userMessage;
+
+    const newUserMessage = { sender: 'user', content: messageToSend, type: 'text' };
     setHistory(prev => [...prev, newUserMessage]);
     setUserMessage('');
     setIsLoading(true);
 
     setHistory(prev => [...prev, { sender: 'assistant', type: 'loading' }]);
-    try{
-        console.log(userMessage);
-        const result = await axios.post(`${backendURL}/agent`,{userMessage});
-        console.log(result.data);
+
+    try {
+        const result = await axios.post(`${backendURL}/agent`, { userMessage: messageToSend });
         const data = result.data;
         let newAssistantMessage = {};
 
-       if (data.length === 0) {
+        
+        if (data.length > 0 && data[0].hasOwnProperty('assistant_response')) {
+            newAssistantMessage = { sender: 'assistant', content: data[0].assistant_response, type: 'text' };
+        
+        } else if (data.length === 0) {
             const queryKeywords = ['show', 'list', 'get', 'view', 'display', 'find'];
-            const isQuery = queryKeywords.some(keyword => userMessage.toLowerCase().startsWith(keyword));
+            const isQuery = queryKeywords.some(keyword => messageToSend.toLowerCase().startsWith(keyword));
 
             if (isQuery) {
                 newAssistantMessage = { sender: 'assistant', content: "I couldn't find anything for that.", type: 'text' };
             } else {
                 newAssistantMessage = { sender: 'assistant', content: 'Done!', type: 'text' };
             }
-      } else if (data[0].hasOwnProperty('item') && data[0].hasOwnProperty('amount')) {
-        newAssistantMessage = { sender: 'assistant', content: data, type: 'chart' };
-      } else {
-        newAssistantMessage = { sender: 'assistant', content: data, type: 'table' };
-      }
+        } else if (data[0].hasOwnProperty('item') && data[0].hasOwnProperty('amount')) {
+            newAssistantMessage = { sender: 'assistant', content: data, type: 'chart' };
+        } else {
+            newAssistantMessage = { sender: 'assistant', content: data, type: 'table' };
+        }
       setIsLoading(true);
       setHistory(prev => [...prev.slice(0, -1), newAssistantMessage]);
     }catch(err){
