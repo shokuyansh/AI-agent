@@ -31,7 +31,16 @@ const ChatMessage = ({ message }) => {
       );
     }
 
-    return <div style={{ whiteSpace: "pre-wrap" }}>{content}</div>;
+     return (
+      <div style={{ 
+        whiteSpace: "pre-wrap",  
+        wordBreak: "break-word",  
+        maxWidth: "100%",        
+        textAlign: 'left'         
+      }}>
+        {content}
+      </div>
+    );
   };
 
   return (

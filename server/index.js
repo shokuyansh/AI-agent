@@ -40,10 +40,10 @@ app.post('/agent',async(req,res)=>{
 
         if (chitchatKeywords.some(keyword => lowerCaseMessage.includes(keyword))) {
             const introMessage = "Hello! I'm your personal assistant. You can ask me to manage your life by giving me commands like:\n\n" +
-                                 "• 'Add bread to my groceries'\n" +
-                                 "• 'Show my tasks'\n" +
-                                 "• 'Log 500 for lunch expense'\n" +
-                                 "• 'Create a book list and add The Great Gatsby'";
+                                 "• Add bread to my groceries\n" +
+                                 "• Show my tasks\n" +
+                                 "• Log 500 for lunch expense\n" +
+                                 "• Create a book list and add The Great Gatsby";
             
             
             return res.json([{ assistant_response: introMessage }]);
