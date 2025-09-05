@@ -39,8 +39,15 @@ useEffect(()=>{
         const data = result.data;
         let newAssistantMessage = {};
 
-      if (data.length === 0) {
-        newAssistantMessage = { sender: 'assistant', content: 'Done!', type: 'text' };
+       if (data.length === 0) {
+            const queryKeywords = ['show', 'list', 'get', 'view', 'display', 'find'];
+            const isQuery = queryKeywords.some(keyword => currentMessage.toLowerCase().startsWith(keyword));
+
+            if (isQuery) {
+                newAssistantMessage = { sender: 'assistant', content: "I couldn't find anything for that.", type: 'text' };
+            } else {
+                newAssistantMessage = { sender: 'assistant', content: 'Done!', type: 'text' };
+            }
       } else if (data[0].hasOwnProperty('item') && data[0].hasOwnProperty('amount')) {
         newAssistantMessage = { sender: 'assistant', content: data, type: 'chart' };
       } else {

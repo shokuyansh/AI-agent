@@ -19,7 +19,11 @@ ${schema}
     - **FALLBACK RULE:** If the request does NOT clearly fit a specialized table (e.g., "track books", "log workout", "save gift ideas"), you MUST use the generic 'custom_lists' table.
     - For 'custom_lists', the user's invented category (e.g., "books", "workout log", "gift ideas") becomes the 'list_name', and the item itself becomes the 'item_description'.
 
-3.  **INSERT vs. UPDATE (UPSERT):** For "add" requests to 'groceries', use an 'INSERT ... ON CONFLICT (user_id, name) DO UPDATE SET quantity = groceries.quantity + EXCLUDED.quantity' statement. For all other tables, including 'custom_lists', just perform a simple INSERT.
+3.  **UPDATING RECORDS:**
+    - For "add" requests to 'groceries', use an 'INSERT ... ON CONFLICT (user_id, name) DO UPDATE SET quantity = groceries.quantity + EXCLUDED.quantity' statement.
+    - For requests to change the status of a task (e.g., "finish", "complete", "done"), generate an 'UPDATE tasks SET status = \'done\' ...' query. For "reopen" or "pending", set status to 'pending'.
+    - For all other tables, including 'custom_lists', just perform a simple INSERT.
+
 
 4.  **EXPENSE TOTALS:** If the user asks to "show expenses", you MUST generate a query that returns all expense rows for that user AND includes a 'total_amount' column on every row, calculated by a window function like 'SUM(amount) OVER ()'.
 
