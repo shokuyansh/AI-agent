@@ -18,7 +18,9 @@ const ChatMessage = ({ message }) => {
     if (type === 'loading') {
       return <LoadingIndicator />;
     }
-    
+    if (content.assistant_response) {
+      return <div style={{ whiteSpace: "pre-wrap" }}>{content.assistant_response}</div>;
+    }
     if (type === 'table') {
       return <ResultsTable data={content} />;
     }
