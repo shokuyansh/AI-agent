@@ -78,9 +78,11 @@ app.post('/agent',async(req,res)=>{
     
     }catch(error){
         console.error('Error processing request:', error);
-        if(error.code==='42P01'){
-            res.status(400).json({error:"No Relevant Data. Please enter some data."});
-        }
+        if (error.code === '42P01') {
+        res.status(400).json({ error: "It looks like the database isn't set up for that yet." });
+    } else {
+        res.status(500).json({ error: "Sorry, I encountered an error trying to process that." });
+    }
     }
 })
 app.listen(port,()=>{
